@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Eid Salami Wheel 🌙</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #0d1f0f 0%, #1a3a1e 40%, #0a1a10 100%);
+    font-family: 'Amiri', serif;
+    color: #f5d98a;
+    overflow-x: hidden;
+    position: relative;
+  }
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: radial-gradient(ellipse at 20% 20%, rgba(212,175,55,0.08) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 80%, rgba(212,175,55,0.06) 0%, transparent 50%);
+    pointer-events: none;
+  }
+  .stars { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
+  .star { position: absolute; background: #f5d98a; border-radius: 50%; animation: twinkle 3s infinite alternate; }
+  @keyframes twinkle {
+    0% { opacity: 0.2; transform: scale(1); }
+    100% { opacity: 0.9; transform: scale(1.3); }
+  }
+  .page {
+    min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 24px 16px 48px;
+    position: relative; z-index: 1;
+  }
+  .header { text-align: center; margin-bottom: 22px; }
+  .eid-title {
+    font-family: 'Cinzel Decorative', cursive;
+    font-size: clamp(22px, 5vw, 40px);
+    color: #f5d98a;
+    text-shadow: 0 0 20px rgba(245,217,138,0.5), 0 2px 4px rgba(0,0,0,0.5);
+    letter-spacing: 2px; line-height: 1.2;
+  }
+  .eid-subtitle {
+    font-family: 'Amiri', serif;
+    font-size: clamp(14px, 3vw, 20px);
+    color: rgba(245,217,138,0.75);
+    margin-top: 8px; letter-spacing: 1px;
+  }
+  .crescent { font-size: 34px; margin: 8px 0; filter: drop-shadow(0 0 8px rgba(245,217,138,0.6)); }
+
+  .wheel-wrapper { position: relative; display: flex; align-items: center; justify-content: center; margin: 10px 0; }
+  .wheel-outer { position: relative; width: min(88vw, 440px); height: min(88vw, 440px); }
+  #wheelCanvas { width: 100%; height: 100%; filter: drop-shadow(0 0 24px rgba(212,175,55,0.35)); }
+
+  .pointer {
+    position: absolute; top: -18px; left: 50%; transform: translateX(-50%);
+    width: 0; height: 0;
+    border-left: 18px solid transparent; border-right: 18px solid transparent;
+    border-top: 40px solid #f5d98a;
+    filter: drop-shadow(0 2px 8px rgba(0,0,0,0.5)); z-index: 10;
+  }
+  .pointer::after {
+    content: ''; position: absolute; top: -44px; left: -6px;
+    width: 12px; height: 12px; background: #fff8dc; border-radius: 50%;
+    box-shadow: 0 0 8px #f5d98a;
+  }
+
+  .spin-btn {
+    margin-top: 28px; padding: 16px 52px;
+    font-family: 'Cinzel Decorative', cursive; font-size: 18px;
+    color: #0d1f0f;
+    background: linear-gradient(135deg, #d4af37, #f5d98a, #c9980a);
+    border: none; border-radius: 60px; cursor: pointer;
+    box-shadow: 0 4px 20px rgba(212,175,55,0.5), inset 0 1px 0 rgba(255,255,255,0.3);
+    letter-spacing: 1px;
+    transition: transform 0.15s, box-shadow 0.15s, opacity 0.3s;
+    text-transform: uppercase;
+  }
+  .spin-btn:hover:not(:disabled) { transform: scale(1.04); box-shadow: 0 6px 28px rgba(212,175,55,0.65); }
+  .spin-btn:active:not(:disabled) { transform: scale(0.97); }
+  .spin-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .rules {
+    margin-top: 24px;
+    background: rgba(245,217,138,0.07);
+    border: 1px solid rgba(245,217,138,0.2);
+    border-radius: 14px; padding: 16px 20px;
+    max-width: 440px; width: 100%;
+    font-size: 14px; color: rgba(245,217,138,0.75); line-height: 1.9;
+  }
+  .rules strong { color: #f5d98a; }
+
+  /* Result overlay */
+  .overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,10,0,0.88);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 100; opacity: 0; pointer-events: none;
+    transition: opacity 0.4s; backdrop-filter: blur(6px);
+  }
+  .overlay.show { opacity: 1; pointer-events: all; }
+  .result-card {
+    background: linear-gradient(160deg, #1a3a1e, #0d2310);
+    border: 2px solid #d4af37; border-radius: 24px;
+    padding: 40px 48px; text-align: center;
+    max-width: 380px; width: 90%;
+    box-shadow: 0 0 60px rgba(212,175,55,0.3);
+    transform: scale(0.7);
+    transition: transform 0.45s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .overlay.show .result-card { transform: scale(1); }
+  .result-emoji { font-size: 54px; margin-bottom: 10px; }
+  .result-label { font-size: 15px; color: rgba(245,217,138,0.7); margin-bottom: 6px; }
+  .result-amount {
+    font-family: 'Cinzel Decorative', cursive;
+    font-size: clamp(40px, 12vw, 64px);
+    color: #f5d98a; text-shadow: 0 0 20px rgba(245,217,138,0.6);
+    letter-spacing: 2px; margin-bottom: 12px;
+  }
+  .result-msg { font-size: 15px; color: rgba(245,217,138,0.8); line-height: 1.6; margin-bottom: 22px; }
+  .close-btn {
+    padding: 12px 32px;
+    background: linear-gradient(135deg, #d4af37, #f5d98a);
+    border: none; border-radius: 40px; color: #0d1f0f;
+    font-family: 'Amiri', serif; font-size: 17px; cursor: pointer; font-weight: 700;
+    transition: transform 0.15s;
+  }
+  .close-btn:hover { transform: scale(1.06); }
+
+  .confetti-container { position: fixed; inset: 0; pointer-events: none; z-index: 99; overflow: hidden; }
+  .confetti-piece { position: absolute; animation: confettiFall linear forwards; }
+  @keyframes confettiFall {
+    0% { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+  }
+
+  .already-played {
+    margin-top: 18px;
+    background: rgba(255,60,60,0.1); border: 1px solid rgba(255,100,100,0.3);
+    border-radius: 12px; padding: 14px 20px;
+    max-width: 440px; width: 100%; text-align: center;
+    color: #ffaaaa; font-size: 15px; display: none;
+  }
+
+  .footer {
+    margin-top: 32px;
+    color: rgba(245,217,138,0.35);
+    font-size: 12px;
+    letter-spacing: 1px;
+    text-align: center;
+  }
+
+  /* Mobile optimizations */
+  @media (max-width: 768px) {
+    .page {
+      padding: 16px 12px 32px;
+    }
+    .spin-btn {
+      padding: 18px 60px;
+      font-size: 20px;
+    }
+    .result-card {
+      padding: 32px 40px;
+    }
+    .rules {
+      padding: 14px 18px;
+      font-size: 13px;
+    }
+  }
+</style>
+</style>
+</head>
+<body>
+
+<div class="stars" id="starsContainer"></div>
+<div class="confetti-container" id="confettiContainer"></div>
+
+<div class="page">
+  <div class="header">
+    <div class="crescent">🌙✨</div>
+    <div class="eid-title">Eid Salami</div>
+    <div class="eid-title" style="font-size:clamp(18px,3.5vw,28px);color:#d4af37;">Wheel of Fortune</div>
+    <div class="eid-subtitle">ঈদ মোবারক — Spin & Win Your Salami!</div>
+  </div>
+
+  <div class="wheel-wrapper">
+    <div class="wheel-outer">
+      <div class="pointer"></div>
+      <canvas id="wheelCanvas" width="600" height="600"></canvas>
+    </div>
+  </div>
+
+  <button class="spin-btn" id="spinBtn" onclick="startSpin()">🎡 Spin!</button>
+
+  <div class="already-played" id="alreadyPlayed">
+    ⚠️ You've already spun the wheel! Each device gets only one chance.<br>
+    <strong>Eid Mubarak! 🌙</strong>
+  </div>
+
+  <div class="rules">
+    <strong>📜 Rules of the Salami Wheel:</strong><br>
+    🌙 Each device gets <strong>one spin only</strong> — no second chances!<br>
+    🎰 Higher amounts are rarer — lower amounts appear more often<br>
+    🎊 Whatever you get is your blessed Eid Salami!<br>
+    ✨ May Allah bless you with abundant khair this Eid<br>
+    🤲 Share the joy — pass the link to family & friends!
+  </div>
+
+  <div class="footer">Made with ❤️ for Eid ul Fitor &nbsp;|&nbsp; ঈদ মোবারক<br>@ All rights reserved by Asif Aman Jihad</div>
+</div>
+
+<!-- Result overlay -->
+<div class="overlay" id="overlay">
+  <div class="result-card">
+    <div class="result-emoji" id="resultEmoji">🎉</div>
+    <div class="result-label">Congratulations! You won</div>
+    <div class="result-amount" id="resultAmount">৳10</div>
+    <div class="result-msg" id="resultMsg">Eid Mubarak!</div>
+    <button class="close-btn" onclick="closeOverlay()">ঈদ মোবারক 🌙</button>
+  </div>
+</div>
+
+<script>
+// ── PRIZE DATA ─────────────────────────────────────────────────────────────
+const BASE_AMOUNTS = [
+  { amount: 11,    label: '৳11',    emoji: '🌙', msg: 'Lucky 11! Mashallah, a charming Salami!' },
+  { amount: 22,    label: '৳22',    emoji: '⭐',  msg: 'Twenty-two blessings on this Eid day!' },
+  { amount: 33,    label: '৳33',    emoji: '💛',  msg: 'Alhamdulillah! A fine Eid Salami for you!' },
+  { amount: 44,    label: '৳44',    emoji: '👑',  msg: 'Wow! A splendid Salami! You are truly blessed this Eid!' },
+  { amount: 55,    label: '৳55',    emoji: '🎊',  msg: 'Subhanallah! A generous Salami! Eid Mubarak!' },
+  { amount: 3.45,  label: '৳3.45',  emoji: '🌿',  msg: 'A sweet little blessing to start your Eid! Mubarak!' },
+  { amount: 2.45,  label: '৳2.45',  emoji: '☘️',  msg: 'Small but full of barakat! Eid Mubarak to you!' },
+  { amount: 3.98,  label: '৳3.98',  emoji: '🍃',  msg: 'Almost 4 — still a lovely Salami! Eid Mubarak!' },
+  { amount: 4,     label: '৳4',     emoji: '✨',  msg: 'A blessed token! Every taka carries Eid joy!' },
+  { amount: 10,    label: '৳10',    emoji: '🌟',  msg: 'Mashallah! A generous little Salami for you!' },
+];
+
+const COLORS = [
+  { bg: '#2d6a4f', text: '#a8d5b5' }, { bg: '#b8860b', text: '#fff8dc' },
+  { bg: '#1a5e3a', text: '#b8f0ce' }, { bg: '#c9980a', text: '#3d2b00' },
+  { bg: '#245e3c', text: '#a8e6c0' }, { bg: '#a07600', text: '#fff3cc' },
+  { bg: '#1b5e3e', text: '#c8ffd4' }, { bg: '#d4af37', text: '#1a2e00' },
+  { bg: '#2e7d52', text: '#b0f0cc' }, { bg: '#b8960c', text: '#fff3cc' },
+  { bg: '#0f4f30', text: '#9dffc4' }, { bg: '#9a7210', text: '#fff8dc' },
+  { bg: '#154f2a', text: '#a0ffcc' }, { bg: '#c09020', text: '#2a1a00' },
+  { bg: '#0d4025', text: '#8aefb8' }, { bg: '#d4a010', text: '#1a0e00' },
+  { bg: '#1e6640', text: '#b8f0cc' }, { bg: '#b07a00', text: '#fff8dc' },
+  { bg: '#0b3820', text: '#7adfaa' }, { bg: '#c8900a', text: '#2a1500' },
+];
+
+// ── WEIGHTED SEGMENT BUILDER ───────────────────────────────────────────────
+// Higher amount = fewer slots (weight = maxAmt / amount)
+function buildSegments(amounts) {
+  const maxAmt = Math.max(...amounts.map(a => a.amount));
+  const weighted = amounts.map(a => ({ ...a, weight: maxAmt / a.amount }));
+  const minW = Math.min(...weighted.map(w => w.weight));
+  const scale = (1 / minW) * 0.3;
+  const segments = [];
+  weighted.forEach(w => {
+    const count = Math.max(1, Math.round(w.weight * scale));
+    for (let i = 0; i < count; i++) segments.push(w);
+  });
+  return segments;
+}
+
+const SEGMENTS = buildSegments(BASE_AMOUNTS).map((s, i) => ({
+  ...s,
+  color: COLORS[i % COLORS.length].bg,
+  textColor: COLORS[i % COLORS.length].text,
+}));
+
+// Shuffle the segments for random order
+function shuffleArray(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+}
+shuffleArray(SEGMENTS);
+
+const NUM = SEGMENTS.length;
+const ARC = (2 * Math.PI) / NUM;
+
+// ── CANVAS SETUP ───────────────────────────────────────────────────────────
+const canvas = document.getElementById('wheelCanvas');
+const ctx = canvas.getContext('2d');
+const W = canvas.width;
+const CX = W / 2, CY = W / 2, R = W / 2 - 16;
+
+let spinning = false;
+let currentAngle = 0;
+let hasPlayed = localStorage.getItem('eidSalamiPlayed_v2');
+
+// ── AUDIO ──────────────────────────────────────────────────────────────────
+let audioCtx = null;
+function getAudio() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+function playTick() {
+  try {
+    const ac = getAudio();
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.connect(g); g.connect(ac.destination);
+    o.frequency.value = 700 + Math.random() * 500; o.type = 'sine';
+    g.gain.setValueAtTime(0.12, ac.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.05);
+    o.start(); o.stop(ac.currentTime + 0.05);
+  } catch(e) {}
+}
+function playWinSound() {
+  try {
+    const ac = getAudio();
+    // Ascending arpeggio
+    [523, 659, 784, 1047, 1319, 1568, 2093].forEach((freq, i) => {
+      const o = ac.createOscillator(), g = ac.createGain();
+      o.connect(g); g.connect(ac.destination);
+      o.frequency.value = freq; o.type = 'sine';
+      const t = ac.currentTime + i * 0.11;
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(0.22, t + 0.05);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.45);
+      o.start(t); o.stop(t + 0.45);
+    });
+    // Applause burst
+    setTimeout(() => {
+      for (let j = 0; j < 12; j++) {
+        const o2 = ac.createOscillator(), g2 = ac.createGain();
+        o2.connect(g2); g2.connect(ac.destination);
+        o2.type = 'sawtooth'; o2.frequency.value = 80 + Math.random() * 240;
+        const t2 = ac.currentTime + j * 0.065;
+        g2.gain.setValueAtTime(0.08, t2);
+        g2.gain.exponentialRampToValueAtTime(0.001, t2 + 0.18);
+        o2.start(t2); o2.stop(t2 + 0.18);
+      }
+    }, 900);
+  } catch(e) {}
+}
+
+// ── DRAW ───────────────────────────────────────────────────────────────────
+function drawWheel(angle) {
+  ctx.clearRect(0, 0, W, W);
+
+  // Outer glow ring
+  ctx.beginPath();
+  ctx.arc(CX, CY, R + 14, 0, 2 * Math.PI);
+  ctx.strokeStyle = '#d4af37'; ctx.lineWidth = 6; ctx.stroke();
+
+  // Decorative dots around ring
+  for (let i = 0; i < 40; i++) {
+    const a = (i / 40) * 2 * Math.PI;
+    ctx.beginPath();
+    ctx.arc(CX + (R + 12) * Math.cos(a), CY + (R + 12) * Math.sin(a), i % 2 === 0 ? 4 : 2.5, 0, 2 * Math.PI);
+    ctx.fillStyle = i % 3 === 0 ? '#f5d98a' : '#d4af37'; ctx.fill();
+  }
+
+  // Segments
+  const fs = NUM > 30 ? 18 : NUM > 20 ? 24 : 28;
+  for (let i = 0; i < NUM; i++) {
+    const sa = angle + i * ARC, ea = sa + ARC;
+    const seg = SEGMENTS[i];
+    ctx.beginPath(); ctx.moveTo(CX, CY);
+    ctx.arc(CX, CY, R, sa, ea); ctx.closePath();
+    ctx.fillStyle = seg.color; ctx.fill();
+    ctx.strokeStyle = '#d4af37'; ctx.lineWidth = 1.5; ctx.stroke();
+
+    ctx.save();
+    ctx.translate(CX, CY); ctx.rotate(sa + ARC / 2);
+    ctx.font = `bold ${fs}px Amiri, serif`;
+    ctx.fillStyle = seg.textColor;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 3;
+    ctx.fillText(seg.label, R * 0.63, 0);
+    ctx.shadowBlur = 0;
+    ctx.restore();
+  }
+
+  // Center circle
+  const grad = ctx.createRadialGradient(CX, CY, 0, CX, CY, 44);
+  grad.addColorStop(0, '#f5d98a'); grad.addColorStop(0.5, '#d4af37'); grad.addColorStop(1, '#9a7210');
+  ctx.beginPath(); ctx.arc(CX, CY, 44, 0, 2 * Math.PI);
+  ctx.fillStyle = grad; ctx.fill();
+  ctx.strokeStyle = '#fff8dc'; ctx.lineWidth = 3; ctx.stroke();
+  ctx.font = 'bold 24px serif';
+  ctx.fillStyle = '#0d1f0f'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText('🌙', CX, CY);
+}
+
+// ── SPIN LOGIC ─────────────────────────────────────────────────────────────
+function getWinner(angle) {
+  const normalized = (((-angle - Math.PI / 2) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+  return SEGMENTS[Math.floor(normalized / ARC) % NUM];
+}
+
+function startSpin() {
+  if (spinning) return;
+  if (hasPlayed) { document.getElementById('alreadyPlayed').style.display = 'block'; return; }
+  spinning = true;
+  document.getElementById('spinBtn').disabled = true;
+
+  const targetIdx = Math.floor(Math.random() * NUM);
+  const minSpins = 5 + Math.random() * 4;
+  const targetAngle = -(2 * Math.PI * minSpins) - (targetIdx * ARC) - (ARC / 2) + (Math.PI / 2);
+  const startAngle = currentAngle;
+  const totalDelta = targetAngle - startAngle;
+  const duration = 5500 + Math.random() * 2000;
+  const startTime = performance.now();
+  let lastTickAngle = startAngle;
+
+  function ease(t) { return 1 - Math.pow(1 - t, 3); }
+
+  function animate(now) {
+    const elapsed = now - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    currentAngle = startAngle + totalDelta * ease(progress);
+
+    const tickInterval = 0.18 - 0.15 * ease(progress);
+    if (Math.abs(currentAngle - lastTickAngle) > tickInterval) { playTick(); lastTickAngle = currentAngle; }
+
+    drawWheel(currentAngle);
+    if (progress < 1) {
+      requestAnimationFrame(animate);
+    } else {
+      spinning = false;
+      localStorage.setItem('eidSalamiPlayed_v2', '1');
+      hasPlayed = true;
+      setTimeout(() => showResult(getWinner(currentAngle)), 450);
+    }
+  }
+  requestAnimationFrame(animate);
+}
+
+// ── RESULT ─────────────────────────────────────────────────────────────────
+function showResult(seg) {
+  playWinSound(); spawnConfetti();
+  document.getElementById('resultEmoji').textContent = seg.emoji;
+  document.getElementById('resultAmount').textContent = seg.label;
+  document.getElementById('resultMsg').textContent = seg.msg;
+  document.getElementById('overlay').classList.add('show');
+}
+function closeOverlay() {
+  document.getElementById('overlay').classList.remove('show');
+  document.getElementById('alreadyPlayed').style.display = 'block';
+}
+
+// ── CONFETTI ───────────────────────────────────────────────────────────────
+function spawnConfetti() {
+  const c = document.getElementById('confettiContainer'); c.innerHTML = '';
+  const colors = ['#d4af37','#f5d98a','#2d6a4f','#a8d5b5','#fff8dc','#c9980a','#b8f0ce','#ffffff'];
+  for (let i = 0; i < 120; i++) {
+    const p = document.createElement('div'); p.className = 'confetti-piece';
+    const sz = 6 + Math.random() * 10;
+    p.style.cssText = `
+      left:${Math.random()*100}vw; top:-20px;
+      width:${sz}px; height:${sz}px;
+      background:${colors[Math.floor(Math.random()*colors.length)]};
+      border-radius:${Math.random()>0.5?'50%':'2px'};
+      animation-duration:${2+Math.random()*3}s;
+      animation-delay:${Math.random()*0.8}s;
+    `;
+    c.appendChild(p);
+    setTimeout(() => p.remove(), 5500);
+  }
+}
+
+// ── STARS ──────────────────────────────────────────────────────────────────
+function initStars() {
+  const c = document.getElementById('starsContainer');
+  for (let i = 0; i < 70; i++) {
+    const s = document.createElement('div'); s.className = 'star';
+    const sz = 1 + Math.random() * 3;
+    s.style.cssText = `width:${sz}px;height:${sz}px;left:${Math.random()*100}vw;top:${Math.random()*100}vh;animation-delay:${Math.random()*3}s;animation-duration:${2+Math.random()*3}s;`;
+    c.appendChild(s);
+  }
+}
+
+// ── INIT ───────────────────────────────────────────────────────────────────
+function init() {
+  initStars();
+  drawWheel(0);
+  if (hasPlayed) {
+    document.getElementById('spinBtn').disabled = true;
+    document.getElementById('alreadyPlayed').style.display = 'block';
+  }
+}
+init();
+</script>
+</body>
+</html>
