@@ -252,9 +252,15 @@ const COLORS = [
 
 // ── WEIGHTED SEGMENT BUILDER ───────────────────────────────────────────────
 // Higher amount = fewer slots (weight = maxAmt / amount)
+// Extra high values are penalized more for lower chance.
 function buildSegments(amounts) {
   const maxAmt = Math.max(...amounts.map(a => a.amount));
-  const weighted = amounts.map(a => ({ ...a, weight: maxAmt / a.amount }));
+  const weighted = amounts.map(a => {
+    let weight = maxAmt / a.amount;
+    if (a.amount >= 20) weight *= 0.2;      // very rare prize
+    else if (a.amount >= 15) weight *= 0.35; // rarer high prize
+    return { ...a, weight };
+  });
   const minW = Math.min(...weighted.map(w => w.weight));
   const scale = (1 / minW) * 0.3;
   const segments = [];
